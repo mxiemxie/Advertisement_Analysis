@@ -1,4 +1,4 @@
-# Advertisement_Analysis
+# Twiter_Sneaker_Analysis
 
 
 1. Use Twitter stream api and Tweepy crawl 50000 real-time twitter with the key words related to sneaks.
