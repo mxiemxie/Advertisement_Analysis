@@ -1,7 +1,7 @@
 # Twiter_Sneaker_Analysis
 
 
-1. Use Twitter stream api and Tweepy crawl 50000 real-time twitter with the key words related to sneaks.
+1. Use Twitter stream api and Tweepy crawl 50000 real-time twitter with the key words related to sneakers.
 2. Divide the Twitters into different groups based on key words. Use pie chart to show the ratio of different brands.
 3. Clean twitters and find the important words in each groups. For example, lots of twitters in Adidas group mention Utd Man because the team just won a champinship of Football League Cup. At the same, we can find Yeezy and boost are the most popular shoes now because they occur a large number of times and distribute in different groups.
 4. Use Word Cloud to visualize the text in different groups.
