@@ -5,6 +5,7 @@ from tweepy import Stream
 import psycopg2
 import json
 import os
+import pandas as pd
 
 #Variables that contains the user credentials to access Twitter API 
 access_token = "2777671802-F34NQ9bKSYXSfGM05wXNF4hgvGmbybpunmgIpRO"
@@ -15,39 +16,58 @@ consumer_secret = "QX2axfCrQdoj5P5t0YmZ7z9zHJ0Z4qc4uMpa2tY5qfugsejLNK"
 
 #This is a basic listener that just prints received tweets to stdout.
 twitterCount = 0
+columns = ['id', 'location', 'timestamp', 'text']
+twitterRecord = pd.DataFrame(columns = columns)
 class StdOutListener(StreamListener):
     
     
     def on_data(self, data):
+    	try:
+	    	global twitterRecord
+	    	global twitterCount
+	    	twitterCount += 1
+	    	data = json.loads(data)
+	    	idInfo = data['id']
+	    	locationInfo = data['geo']['coordinates'] if data['geo'] is not None else[0, 0]
+	    	timestampInfo = int(data['timestamp_ms'])
+	    	textInfo = data['text']
+	    	twitterRecord.loc[len(twitterRecord)] = [idInfo, locationInfo, timestampInfo, textInfo]
+	    	print twitterCount
+	    	if len(twitterRecord) == 1000:
+	    		self.insert_data()
+    		# twitterRecord = twitterRecord[0:0]
+    	except KeyError:
+    		print "Key Error"
+    	except ValueError:
+    		print "Value Error"
+    	return True
 
-        with open('twitterData.json', 'a') as f:
-            f.write(data)
-            global twitterCount
-            twitterCount += 1
-            if twitterCount % 10 == 0:
-                self.insert_data('twitterData.json')
-            print twitterCount
-            return True
-
-    def insert_data(self, fileName):
+    def insert_data(self):
+    	global twitterRecord
         conn_string = "host='localhost' dbname='twitterdata' user='mingchen' password='123456'"
         print "Connecting to database\n ->%s" % (conn_string)
         conn = psycopg2.connect(conn_string)
         cursor = conn.cursor()
-        with open(fileName, 'rb') as f:
-                        oriData = f.readlines()
-                        for i in range(len(oriData)):
-                            try:
-                                rowData = json.loads(oriData[i])
-                                text = rowData["text"]
-                                cursor.execute("INSERT INTO twittercontent VALUES (%s);",(text,))
-                            except KeyError:
-                                print "Key Error"
-                            except ValueError:
-                                print "value Error"
-                        conn.commit()
-        print "database update done!    " + fileName
-        os.remove(fileName)
+        # query = "INSERT INTO twitterinfo(id, location, timestamp, text ) VALUES (%d, [%d, %d], %d, %s);"
+        queryInsertTwitterinfo = "INSERT INTO twitterinfo VALUES (%s, %s, %s);"
+        queryInsertLocation = "INSERT INTO location VALUES (%s, %s, %s);"
+
+        try:
+            for i, row in twitterRecord.iterrows():
+            	dataTwitterInfo = (row['id'], row['timestamp'], row['text'],)
+            	dataLocation = (row['id'], row['location'][0], row['location'][1],)
+            	cursor.execute(queryInsertTwitterinfo, dataTwitterInfo)
+            	cursor.execute(queryInsertLocation, dataLocation)
+
+        except KeyError:
+            print "Key Error"
+        except ValueError:
+            print "value Error"
+
+        conn.commit()
+        twitterRecord = twitterRecord[0:0]
+        conn.commit()
+        print "database update done!    "
 
 
     def on_error(self, status):
